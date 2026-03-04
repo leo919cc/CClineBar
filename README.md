@@ -268,10 +268,11 @@ Supported segments: Directory, Git, Model, Context Window, Model Time, Usage, Co
 The cost segment shows `$session / $monthly` — current session cost and accumulated monthly total.
 
 - **Session cost**: Read directly from Claude Code's `total_cost_usd` field, calculated by Claude Code based on the actual model and its API pricing
-- **Monthly total**: Accumulated across all sessions on this machine, tracked in `~/.claude/ccline/monthly_cost.json`. Resets automatically each month. Once ccline is installed and the cost segment is enabled, every new Claude Code session opened on this machine will be included in the monthly total
+- **Monthly total**: Accumulated across all sessions on this machine, tracked in `~/.claude/ccline/monthly_cost.json`. Resets automatically each month
+- **Always tracking**: Cost data is recorded on every render regardless of whether the cost segment is displayed. Once ccline is installed, every new session on this machine contributes to the monthly total
 - **No double-counting**: Each session is identified by its transcript path — repeated renders overwrite, not accumulate
 - **Per-machine tracking**: The monthly total only covers sessions on the machine where ccline is installed. Sessions on other devices are not included. For account-wide usage, check Anthropic's billing dashboard
-- **Sessions before setup are not included**: Only sessions that render the status bar after ccline is installed and cost is enabled will be tracked. Pre-existing sessions from the current month are not retroactively counted
+- **Sessions before installation are not included**: Only sessions that render the status bar after ccline is installed will be tracked. Pre-existing sessions from the current month are not retroactively counted
 
 > **Note for Pro/Max subscribers**: The cost shown is the **API-equivalent cost** (what the usage would cost at API token rates), not your actual subscription billing. It's useful as a usage intensity metric.
 

@@ -284,6 +284,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let stdin = io::stdin();
     let input: InputData = serde_json::from_reader(stdin.lock())?;
 
+    // Always track cost (regardless of whether cost segment is displayed)
+    if let Some(cost) = &input.cost {
+        if let Some(session_cost) = cost.total_cost_usd {
+            let _ = ccometixline::core::segments::cost::track_monthly_cost(
+                &input.transcript_path,
+                session_cost,
+            );
+        }
+    }
+
     // Collect segment data
     let segments_data = collect_all_segments(&config, &input);
 

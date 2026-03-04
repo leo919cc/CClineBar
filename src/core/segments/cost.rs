@@ -38,7 +38,10 @@ fn save_monthly_data(data: &MonthlyCostData) {
     }
 }
 
-fn update_and_get_monthly_total(transcript_path: &str, session_cost: f64) -> Option<f64> {
+/// Track this session's cost in the monthly data file.
+/// Called on every render regardless of whether the cost segment is displayed.
+/// Returns the monthly total.
+pub fn track_monthly_cost(transcript_path: &str, session_cost: f64) -> Option<f64> {
     let month = current_month();
 
     let mut data = load_monthly_data().unwrap_or_else(|| MonthlyCostData {
@@ -65,6 +68,15 @@ fn update_and_get_monthly_total(transcript_path: &str, session_cost: f64) -> Opt
     Some(total)
 }
 
+/// Read the monthly total without writing. Used by the cost segment for display.
+fn read_monthly_total() -> Option<f64> {
+    let data = load_monthly_data()?;
+    if data.month != current_month() {
+        return Some(0.0);
+    }
+    Some(data.sessions.values().sum())
+}
+
 #[derive(Default)]
 pub struct CostSegment;
 
@@ -85,17 +97,12 @@ impl Segment for CostSegment {
             format!("${:.2}", session_cost)
         };
 
-        // Try to get monthly total, fallback to session-only display
-        let primary = match update_and_get_monthly_total(&input.transcript_path, session_cost) {
-            Some(monthly_total) => {
-                let monthly_display = if monthly_total < 0.01 {
-                    "$0".to_string()
-                } else {
-                    format!("${:.2}", monthly_total)
-                };
-                format!("{} / {}", session_display, monthly_display)
+        // Read monthly total (already written by track_monthly_cost in main)
+        let primary = match read_monthly_total() {
+            Some(monthly_total) if monthly_total >= 0.01 => {
+                format!("{} / ${:.2}", session_display, monthly_total)
             }
-            None => session_display,
+            _ => session_display,
         };
 
         let mut metadata = HashMap::new();
