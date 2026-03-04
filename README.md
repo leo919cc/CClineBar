@@ -253,6 +253,15 @@ CCometixLine supports full configuration via TOML files and interactive TUI:
 - **Theme files**: `~/.claude/ccline/themes/*.toml` for custom themes
 - **Automatic initialization**: `ccline --init` creates default configuration
 
+### Style Options
+
+```toml
+[style]
+mode = "nerd_font"    # "plain", "nerd_font", or "powerline"
+separator = " | "
+show_icons = true     # Set to false to hide all segment icons and save space
+```
+
 ### Available Segments
 
 All segments are configurable with:
