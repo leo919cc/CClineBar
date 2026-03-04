@@ -112,12 +112,27 @@ pub struct OutputStyle {
 }
 
 #[derive(Deserialize)]
+pub struct ContextWindowInput {
+    pub context_window_size: Option<u64>,
+    pub current_usage: Option<CurrentUsageInput>,
+}
+
+#[derive(Deserialize)]
+pub struct CurrentUsageInput {
+    pub input_tokens: Option<u64>,
+    pub output_tokens: Option<u64>,
+    pub cache_creation_input_tokens: Option<u64>,
+    pub cache_read_input_tokens: Option<u64>,
+}
+
+#[derive(Deserialize)]
 pub struct InputData {
     pub model: Model,
     pub workspace: Workspace,
     pub transcript_path: String,
     pub cost: Option<Cost>,
     pub output_style: Option<OutputStyle>,
+    pub context_window: Option<ContextWindowInput>,
 }
 
 // OpenAI-style nested token details

@@ -5,6 +5,10 @@ use std::fs;
 use std::io::{BufRead, BufReader};
 use std::path::{Path, PathBuf};
 
+/// Claude Code constants (from cli.js source)
+const MAX_OUTPUT_CAP: u64 = 20_000; // a5Y — caps min(max_output, 20000)
+const AUTOCOMPACT_BUFFER: u64 = 13_000; // wk8 — subtracted for autocompact threshold
+
 #[derive(Default)]
 pub struct ContextWindowSegment;
 
@@ -18,44 +22,113 @@ impl ContextWindowSegment {
         let model_config = ModelConfig::load();
         model_config.get_context_limit(model_id)
     }
+
+    /// Get max output tokens for a model (used to compute effective context window).
+    /// These match Claude Code's internal `uk8(model)` values.
+    fn get_max_output_tokens(model_id: &str) -> u64 {
+        let lower = model_id.to_lowercase();
+        if lower.contains("opus") {
+            32_000
+        } else if lower.contains("sonnet") {
+            16_384
+        } else if lower.contains("haiku") {
+            8_192
+        } else {
+            16_384 // conservative default
+        }
+    }
+
+    /// Compute "context % left until auto-compaction" using Claude Code's UI formula.
+    /// Formula from cli.js `Yl()`:
+    ///   effective_window = context_window_size - min(max_output, 20000)
+    ///   autocompact_threshold = effective_window - 13000
+    ///   percent_left = max(0, round((threshold - tokens_used) / threshold * 100))
+    fn compute_remaining_percent(
+        context_window_size: u64,
+        tokens_used: u64,
+        model_id: &str,
+    ) -> f64 {
+        let max_output = Self::get_max_output_tokens(model_id);
+        let output_reserve = max_output.min(MAX_OUTPUT_CAP);
+        let effective_window = context_window_size.saturating_sub(output_reserve);
+        let threshold = effective_window.saturating_sub(AUTOCOMPACT_BUFFER);
+
+        if threshold == 0 {
+            return 0.0;
+        }
+
+        let remaining = threshold.saturating_sub(tokens_used) as f64;
+        (remaining / threshold as f64 * 100.0).max(0.0).round()
+    }
 }
 
 impl Segment for ContextWindowSegment {
     fn collect(&self, input: &InputData) -> Option<SegmentData> {
-        // Dynamically determine context limit based on current model ID
-        let context_limit = Self::get_context_limit_for_model(&input.model.id);
+        let mut metadata = HashMap::new();
+        metadata.insert("model".to_string(), input.model.id.clone());
 
+        // Primary path: use context_window JSON from Claude Code (matches UI formula exactly)
+        if let Some(ref cw) = input.context_window {
+            if let (Some(window_size), Some(ref usage)) =
+                (cw.context_window_size, &cw.current_usage)
+            {
+                let tokens_used = usage.input_tokens.unwrap_or(0)
+                    + usage.cache_creation_input_tokens.unwrap_or(0)
+                    + usage.cache_read_input_tokens.unwrap_or(0)
+                    + usage.output_tokens.unwrap_or(0);
+
+                let percent_left = Self::compute_remaining_percent(
+                    window_size,
+                    tokens_used,
+                    &input.model.id,
+                );
+
+                let display = if percent_left.fract() == 0.0 {
+                    format!("{:.0}%", percent_left)
+                } else {
+                    format!("{:.1}%", percent_left)
+                };
+
+                metadata.insert("tokens".to_string(), tokens_used.to_string());
+                metadata.insert("percentage".to_string(), percent_left.to_string());
+                metadata.insert("limit".to_string(), window_size.to_string());
+
+                return Some(SegmentData {
+                    primary: display,
+                    secondary: String::new(),
+                    metadata,
+                });
+            }
+        }
+
+        // Fallback: parse transcript file (for older Claude Code versions without context_window)
+        let context_limit = Self::get_context_limit_for_model(&input.model.id);
         let context_used_token_opt = parse_transcript_usage(&input.transcript_path);
 
         let percentage_display = match context_used_token_opt {
             Some(context_used_token) => {
-                let context_used_rate = (context_used_token as f64 / context_limit as f64) * 100.0;
-                let context_remaining = (100.0 - context_used_rate).max(0.0);
+                let percent_left = Self::compute_remaining_percent(
+                    context_limit as u64,
+                    context_used_token as u64,
+                    &input.model.id,
+                );
 
-                if context_remaining.fract() == 0.0 {
-                    format!("{:.0}%", context_remaining)
-                } else {
-                    format!("{:.1}%", context_remaining)
-                }
-            }
-            None => "-".to_string(),
-        };
-
-        let mut metadata = HashMap::new();
-        match context_used_token_opt {
-            Some(context_used_token) => {
-                let context_used_rate = (context_used_token as f64 / context_limit as f64) * 100.0;
-                let context_remaining = (100.0 - context_used_rate).max(0.0);
                 metadata.insert("tokens".to_string(), context_used_token.to_string());
-                metadata.insert("percentage".to_string(), context_remaining.to_string());
+                metadata.insert("percentage".to_string(), percent_left.to_string());
+
+                if percent_left.fract() == 0.0 {
+                    format!("{:.0}%", percent_left)
+                } else {
+                    format!("{:.1}%", percent_left)
+                }
             }
             None => {
                 metadata.insert("tokens".to_string(), "-".to_string());
                 metadata.insert("percentage".to_string(), "-".to_string());
+                "-".to_string()
             }
-        }
+        };
         metadata.insert("limit".to_string(), context_limit.to_string());
-        metadata.insert("model".to_string(), input.model.id.clone());
 
         Some(SegmentData {
             primary: percentage_display,
