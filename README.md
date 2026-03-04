@@ -261,7 +261,21 @@ All segments are configurable with:
 - Color customization
 - Format options
 
-Supported segments: Directory, Git, Model, Usage, Time, Cost, OutputStyle
+Supported segments: Directory, Git, Model, Context Window, Model Time, Usage, Cost, Session, OutputStyle
+
+### Cost Segment
+
+The cost segment shows `$session / $monthly` — current session cost and accumulated monthly total.
+
+- **Session cost**: Read directly from Claude Code's `total_cost_usd` field, calculated by Claude Code based on the actual model and its API pricing
+- **Monthly total**: Accumulated across all sessions, tracked in `~/.claude/ccline/monthly_cost.json`. Resets automatically each month
+- **No double-counting**: Each session is identified by its transcript path — repeated renders overwrite, not accumulate
+
+> **Note for Pro/Max subscribers**: The cost shown is the **API-equivalent cost** (what the usage would cost at API token rates), not your actual subscription billing. It's useful as a usage intensity metric.
+
+### Model Time Segment
+
+Shows actual model generation time (`total_api_duration_ms`) for the current session — not wall clock time. Only updates when Claude Code renders the status line (i.e., during active interactions)
 
 
 ## Requirements
