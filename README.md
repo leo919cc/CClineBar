@@ -1,6 +1,6 @@
 # CClineBar
 
-> Forked from [Haleclipse/CClineBar](https://github.com/Haleclipse/CClineBar) — thank you for the excellent foundation.
+> Forked from [Haleclipse/CCometixLine](https://github.com/Haleclipse/CCometixLine) — thank you for the excellent foundation.
 
 [English](README.md) | [中文](README.zh.md)
 
@@ -9,16 +9,36 @@ A high-performance Claude Code statusline tool written in Rust with Git integrat
 ![Language:Rust](https://img.shields.io/static/v1?label=Language&message=Rust&color=orange&style=flat-square)
 ![License:MIT](https://img.shields.io/static/v1?label=License&message=MIT&color=blue&style=flat-square)
 
-## Screenshots
+## Screenshot
 
 ![CClineBar](assets/img1.png)
 
-The statusline shows: Model | Directory | Git Branch Status | Context Window Information
+## What This Fork Adds
+
+### Cost Tracking — `$session / $monthly`
+
+As a Max plan subscriber, I was curious: how much would I actually be paying if I used a pay-as-you-go API key instead? This segment answers that question — it shows the API-equivalent cost of your usage, so you can see the real dollar value of what your subscription covers.
+
+- **Session cost**: Read from Claude Code's `total_cost_usd` field, based on actual model and API pricing
+- **Monthly total**: Accumulated across all sessions on this machine, tracked in `~/.claude/ccline/monthly_cost.json`, resets each month
+- **Always tracking**: Cost data is recorded on every render regardless of whether the cost segment is displayed
+- **No double-counting**: Each session is identified by its transcript path — repeated renders overwrite, not accumulate
+
+### Model Working Time
+
+If you think of the LLM as a copilot, it's interesting to know how long your copilot has actually been working. This segment shows the total model generation time (`total_api_duration_ms`) for the current session — pure thinking time, not wall clock time.
+
+### Other Additions
+
+- **`show_icons` toggle** — hide all segment icons to save terminal space
+- **Auto-patch context warnings** — automatically removes "Context low" messages on first render, no manual `--patch` needed
+- **Accurate context %** — shows context remaining (not used), matching Claude Code's own formula
+- **Cost always tracked** — monthly cost accumulates even when the cost segment is hidden
 
 ## Features
 
 ### Core Functionality
-- **Git integration** with branch, status, and tracking info  
+- **Git integration** with branch, status, and tracking info
 - **Model display** with simplified Claude model names
 - **Usage tracking** based on transcript analysis
 - **Directory display** showing current workspace
@@ -32,10 +52,10 @@ The statusline shows: Model | Directory | Git Branch Status | Context Window Inf
 - **Configuration management** (init, check, edit)
 
 ### Claude Code Enhancement
-- **Context warning disabler** - Remove annoying "Context low" messages
-- **Verbose mode enabler** - Enhanced output detail
-- **Robust patcher** - Survives Claude Code version updates
-- **Automatic backups** - Safe modification with easy recovery
+- **Context warning disabler** — remove "Context low" messages (auto-applied on first render)
+- **Verbose mode enabler** — enhanced output detail
+- **Robust patcher** — survives Claude Code version updates
+- **Automatic backups** — safe modification with easy recovery
 
 ## Installation
 
@@ -44,25 +64,13 @@ The statusline shows: Model | Directory | Git Branch Status | Context Window Inf
 Install via npm (works on all platforms):
 
 ```bash
-# Install globally
 npm install -g @cometix/ccline
-
-# Or using yarn
-yarn global add @cometix/ccline
-
-# Or using pnpm
-pnpm add -g @cometix/ccline
-```
-
-Use npm mirror for faster download:
-```bash
-npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 ```
 
 After installation:
-- ✅ Global command `ccline` is available everywhere
-- ⚙️ Follow the configuration steps below to integrate with Claude Code
-- 🎨 Run `ccline -c` to open configuration panel for theme selection
+- Global command `ccline` is available everywhere
+- Follow the configuration steps below to integrate with Claude Code
+- Run `ccline -c` to open configuration panel for theme selection
 
 ### Claude Code Configuration
 
@@ -72,7 +80,7 @@ Add to your Claude Code `settings.json`:
 ```json
 {
   "statusLine": {
-    "type": "command", 
+    "type": "command",
     "command": "~/.claude/ccline/ccline",
     "padding": 0
   }
@@ -83,24 +91,12 @@ Add to your Claude Code `settings.json`:
 ```json
 {
   "statusLine": {
-    "type": "command", 
+    "type": "command",
     "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
     "padding": 0
   }
 }
 ```
-
-**Fallback (npm installation):**
-```json
-{
-  "statusLine": {
-    "type": "command", 
-    "command": "ccline",
-    "padding": 0
-  }
-}
-```
-*Use this if npm global installation is available in PATH*
 
 ### Update
 
@@ -111,56 +107,48 @@ npm update -g @cometix/ccline
 <details>
 <summary>Manual Installation (Click to expand)</summary>
 
-Alternatively, download from [Releases](https://github.com/Haleclipse/CClineBar/releases):
+Download from [Releases](https://github.com/Haleclipse/CCometixLine/releases):
 
-#### Linux
-
-#### Option 1: Dynamic Binary (Recommended)
+#### Linux (Dynamic — Recommended)
 ```bash
 mkdir -p ~/.claude/ccline
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-linux-x64.tar.gz
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-linux-x64.tar.gz
 tar -xzf ccline-linux-x64.tar.gz
 cp ccline ~/.claude/ccline/
 chmod +x ~/.claude/ccline/ccline
 ```
-*Requires: Ubuntu 22.04+, CentOS 9+, Debian 11+, RHEL 9+ (glibc 2.35+)*
 
-#### Option 2: Static Binary (Universal Compatibility)
+#### Linux (Static — Universal)
 ```bash
 mkdir -p ~/.claude/ccline
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-linux-x64-static.tar.gz
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-linux-x64-static.tar.gz
 tar -xzf ccline-linux-x64-static.tar.gz
-cp ccline ~/.claude/ccline/
-chmod +x ~/.claude/ccline/ccline
-```
-*Works on any Linux distribution (static, no dependencies)*
-
-#### macOS (Intel)
-
-```bash  
-mkdir -p ~/.claude/ccline
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-macos-x64.tar.gz
-tar -xzf ccline-macos-x64.tar.gz
 cp ccline ~/.claude/ccline/
 chmod +x ~/.claude/ccline/ccline
 ```
 
 #### macOS (Apple Silicon)
-
 ```bash
-mkdir -p ~/.claude/ccline  
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-macos-arm64.tar.gz
+mkdir -p ~/.claude/ccline
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-macos-arm64.tar.gz
 tar -xzf ccline-macos-arm64.tar.gz
 cp ccline ~/.claude/ccline/
 chmod +x ~/.claude/ccline/ccline
 ```
 
-#### Windows
+#### macOS (Intel)
+```bash
+mkdir -p ~/.claude/ccline
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-macos-x64.tar.gz
+tar -xzf ccline-macos-x64.tar.gz
+cp ccline ~/.claude/ccline/
+chmod +x ~/.claude/ccline/ccline
+```
 
+#### Windows
 ```powershell
-# Create directory and download
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\ccline"
-Invoke-WebRequest -Uri "https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-windows-x64.zip" -OutFile "ccline-windows-x64.zip"
+Invoke-WebRequest -Uri "https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-windows-x64.zip" -OutFile "ccline-windows-x64.zip"
 Expand-Archive -Path "ccline-windows-x64.zip" -DestinationPath "."
 Move-Item "ccline.exe" "$env:USERPROFILE\.claude\ccline\"
 ```
@@ -170,18 +158,13 @@ Move-Item "ccline.exe" "$env:USERPROFILE\.claude\ccline\"
 ### Build from Source
 
 ```bash
-git clone https://github.com/Haleclipse/CClineBar.git
+git clone https://github.com/leo919cc/CClineBar.git
 cd CClineBar
 cargo build --release
 
-# Linux/macOS
 mkdir -p ~/.claude/ccline
 cp target/release/ccometixline ~/.claude/ccline/ccline
 chmod +x ~/.claude/ccline/ccline
-
-# Windows (PowerShell)
-New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\ccline"
-copy target\release\ccometixline.exe "$env:USERPROFILE\.claude\ccline\ccline.exe"
 ```
 
 ## Usage
@@ -189,62 +172,23 @@ copy target\release\ccometixline.exe "$env:USERPROFILE\.claude\ccline\ccline.exe
 ### Configuration Management
 
 ```bash
-# Initialize configuration file
-ccline --init
-
-# Check configuration validity  
-ccline --check
-
-# Print current configuration
-ccline --print
-
-# Enter TUI configuration mode
-ccline --config
+ccline --init      # Initialize configuration file
+ccline --check     # Check configuration validity
+ccline --print     # Print current configuration
+ccline --config    # Enter TUI configuration mode
 ```
 
 ### Theme Override
 
 ```bash
-# Temporarily use specific theme (overrides config file)
 ccline --theme cometix
 ccline --theme minimal
 ccline --theme gruvbox
 ccline --theme nord
 ccline --theme powerline-dark
-
-# Or use custom theme files from ~/.claude/ccline/themes/
-ccline --theme my-custom-theme
 ```
 
-### Claude Code Enhancement
-
-```bash
-# Disable context warnings and enable verbose mode
-ccline --patch /path/to/claude-code/cli.js
-
-# Example for common installation
-ccline --patch ~/.local/share/fnm/node-versions/v24.4.1/installation/lib/node_modules/@anthropic-ai/claude-code/cli.js
-```
-
-## Default Segments
-
-Displays: `Directory | Git Branch Status | Model | Context Window`
-
-### Git Status Indicators
-
-- Branch name with Nerd Font icon
-- Status: `✓` Clean, `●` Dirty, `⚠` Conflicts  
-- Remote tracking: `↑n` Ahead, `↓n` Behind
-
-### Model Display
-
-Shows simplified Claude model names:
-- `claude-3-5-sonnet` → `Sonnet 3.5`
-- `claude-4-sonnet` → `Sonnet 4`
-
-### Context Window Display
-
-Token usage percentage based on transcript analysis with context limit tracking.
+Or use custom theme files from `~/.claude/ccline/themes/`.
 
 ## Configuration
 
@@ -266,75 +210,30 @@ show_icons = true     # Set to false to hide all segment icons and save space
 
 ### Available Segments
 
-All segments are configurable with:
-- Enable/disable toggle
-- Custom separators and icons
-- Color customization
-- Format options
+All segments are configurable with enable/disable toggle, custom separators, icons, colors, and format options.
 
 Supported segments: Directory, Git, Model, Context Window, Model Time, Usage, Cost, Session, OutputStyle
 
-### Cost Segment
-
-The cost segment shows `$session / $monthly` — current session cost and accumulated monthly total.
-
-- **Session cost**: Read directly from Claude Code's `total_cost_usd` field, calculated by Claude Code based on the actual model and its API pricing
-- **Monthly total**: Accumulated across all sessions on this machine, tracked in `~/.claude/ccline/monthly_cost.json`. Resets automatically each month
-- **Always tracking**: Cost data is recorded on every render regardless of whether the cost segment is displayed. Once ccline is installed, every new session on this machine contributes to the monthly total
-- **No double-counting**: Each session is identified by its transcript path — repeated renders overwrite, not accumulate
-- **Per-machine tracking**: The monthly total only covers sessions on the machine where ccline is installed. Sessions on other devices are not included. For account-wide usage, check Anthropic's billing dashboard
-- **Sessions before installation are not included**: Only sessions that render the status bar after ccline is installed will be tracked. Pre-existing sessions from the current month are not retroactively counted
-
-> **Note for Pro/Max subscribers**: The cost shown is the **API-equivalent cost** (what the usage would cost at API token rates), not your actual subscription billing. It's useful as a usage intensity metric.
-
-### Model Time Segment
-
-Shows actual model generation time (`total_api_duration_ms`) for the current session — not wall clock time. Only updates when Claude Code renders the status line (i.e., during active interactions)
-
-
 ## Requirements
 
-- **Claude Code**: Required — ccline is a statusline extension for Claude Code
-- **Git**: Version 1.5+ (Git 2.22+ recommended for better branch detection)
-- **Nerd Font** (recommended): Required for NerdFont and Powerline themes. The default `plain` theme uses emoji icons and works without Nerd Fonts
-  - Install a [Nerd Font](https://www.nerdfonts.com/) (e.g., FiraCode Nerd Font, JetBrains Mono Nerd Font)
-  - Set your terminal font to the installed Nerd Font
-  - Without a Nerd Font, use the `plain` style mode or the `default`/`minimal` themes which use emoji icons
-- **Rust** (build from source only): Install via [rustup](https://rustup.rs/) — not needed if installing via npm
+- **Claude Code**: Required — CClineBar is a statusline extension for Claude Code
+- **Git**: Version 1.5+ (Git 2.22+ recommended)
+- **Nerd Font** (recommended): Required for NerdFont and Powerline themes. The `plain` theme uses emoji icons and works without Nerd Fonts
+- **Rust** (build from source only): Install via [rustup](https://rustup.rs/)
 
 ## Development
 
 ```bash
-# Build development version
-cargo build
-
-# Run tests
-cargo test
-
-# Build optimized release
-cargo build --release
+cargo build            # Development build
+cargo test             # Run tests
+cargo build --release  # Optimized release build
 ```
-
-## Roadmap
-
-- [x] TOML configuration file support
-- [x] TUI configuration interface
-- [x] Custom themes
-- [x] Interactive main menu
-- [x] Claude Code enhancement tools
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit issues or pull requests.
 
 ## Related Projects
 
-- [tweakcc](https://github.com/Piebald-AI/tweakcc) - Command-line tool to customize your Claude Code themes, thinking verbs, and more.
+- [CCometixLine](https://github.com/Haleclipse/CCometixLine) — the original project this fork is based on
+- [tweakcc](https://github.com/Piebald-AI/tweakcc) — command-line tool to customize Claude Code themes, thinking verbs, and more
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Haleclipse/CClineBar&type=Date)](https://star-history.com/#Haleclipse/CClineBar&Date)
+[MIT License](LICENSE)
