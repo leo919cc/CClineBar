@@ -30,11 +30,12 @@ impl Segment for ContextWindowSegment {
         let percentage_display = match context_used_token_opt {
             Some(context_used_token) => {
                 let context_used_rate = (context_used_token as f64 / context_limit as f64) * 100.0;
+                let context_remaining = (100.0 - context_used_rate).max(0.0);
 
-                if context_used_rate.fract() == 0.0 {
-                    format!("{:.0}%", context_used_rate)
+                if context_remaining.fract() == 0.0 {
+                    format!("{:.0}%", context_remaining)
                 } else {
-                    format!("{:.1}%", context_used_rate)
+                    format!("{:.1}%", context_remaining)
                 }
             }
             None => "-".to_string(),
@@ -44,8 +45,9 @@ impl Segment for ContextWindowSegment {
         match context_used_token_opt {
             Some(context_used_token) => {
                 let context_used_rate = (context_used_token as f64 / context_limit as f64) * 100.0;
+                let context_remaining = (100.0 - context_used_rate).max(0.0);
                 metadata.insert("tokens".to_string(), context_used_token.to_string());
-                metadata.insert("percentage".to_string(), context_used_rate.to_string());
+                metadata.insert("percentage".to_string(), context_remaining.to_string());
             }
             None => {
                 metadata.insert("tokens".to_string(), "-".to_string());
