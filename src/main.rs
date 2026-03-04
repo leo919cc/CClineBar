@@ -2,6 +2,120 @@ use ccometixline::cli::Cli;
 use ccometixline::config::{Config, InputData};
 use ccometixline::core::{collect_all_segments, StatusLineGenerator};
 use std::io::{self, IsTerminal};
+use std::path::PathBuf;
+
+/// Silently auto-patch the context low warning in Claude Code's cli.js.
+/// Uses a marker file to avoid re-patching on every render.
+fn auto_patch_context_low() {
+    let _ = try_auto_patch_context_low();
+}
+
+fn get_marker_path() -> Option<PathBuf> {
+    let home = dirs::home_dir()?;
+    Some(home.join(".claude").join("ccline").join(".context_patched"))
+}
+
+fn find_claude_cli_js() -> Option<PathBuf> {
+    let candidates = [
+        // Homebrew (macOS)
+        "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/cli.js",
+        "/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js",
+    ];
+
+    for path in &candidates {
+        let p = PathBuf::from(path);
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    // Search in common node version managers
+    let home = dirs::home_dir()?;
+    let search_dirs = [
+        home.join(".local/share/fnm/node-versions"),
+        home.join(".nvm/versions/node"),
+        home.join(".volta/tools/image/node"),
+        home.join(".bun/install/global/node_modules"),
+    ];
+
+    for dir in &search_dirs {
+        if !dir.exists() {
+            continue;
+        }
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let candidate = entry
+                    .path()
+                    .join("lib/node_modules/@anthropic-ai/claude-code/cli.js");
+                // Also check without lib/ prefix for some layouts
+                let candidate2 = entry
+                    .path()
+                    .join("installation/lib/node_modules/@anthropic-ai/claude-code/cli.js");
+                if candidate.exists() {
+                    return Some(candidate);
+                }
+                if candidate2.exists() {
+                    return Some(candidate2);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn try_auto_patch_context_low() -> Option<()> {
+    let marker_path = get_marker_path()?;
+    let cli_js = find_claude_cli_js()?;
+
+    // Get cli.js modification time
+    let cli_modified = std::fs::metadata(&cli_js).ok()?.modified().ok()?;
+    let cli_modified_str = format!("{:?}", cli_modified);
+
+    // Check marker: skip if already patched for this version
+    if marker_path.exists() {
+        let marker_content = std::fs::read_to_string(&marker_path).unwrap_or_default();
+        if marker_content == cli_modified_str {
+            return None; // Already patched this version
+        }
+    }
+
+    // Create backup if none exists
+    let backup_path = format!("{}.backup", cli_js.display());
+    if !std::path::Path::new(&backup_path).exists() {
+        let _ = std::fs::copy(&cli_js, &backup_path);
+    }
+
+    // Patch silently — suppress stdout from patcher's println! calls
+    use std::os::unix::io::AsRawFd;
+    let devnull = std::fs::File::open("/dev/null").ok()?;
+    let stdout_fd = io::stdout().as_raw_fd();
+    let saved_stdout = unsafe { libc::dup(stdout_fd) };
+    unsafe { libc::dup2(devnull.as_raw_fd(), stdout_fd) };
+
+    let mut patcher = ccometixline::utils::ClaudeCodePatcher::new(&cli_js).ok();
+    let success = if let Some(ref mut p) = patcher {
+        let results = p.apply_context_low_patch();
+        results.iter().any(|(_, ok)| *ok)
+    } else {
+        false
+    };
+
+    // Restore stdout
+    unsafe { libc::dup2(saved_stdout, stdout_fd) };
+    unsafe { libc::close(saved_stdout) };
+
+    if success {
+        if let Some(p) = patcher {
+            let _ = p.save();
+        }
+    }
+
+    // Write marker regardless (so we don't retry on failure every render)
+    let _ = std::fs::write(&marker_path, &cli_modified_str);
+
+    None
+}
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cli = Cli::parse_args();
@@ -152,6 +266,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         return Ok(());
     }
+
+    // Auto-patch context low warning silently
+    auto_patch_context_low();
 
     // Read Claude Code data from stdin
     let stdin = io::stdin();
