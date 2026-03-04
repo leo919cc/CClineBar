@@ -5,7 +5,7 @@ use std::io::{self, IsTerminal};
 use std::path::PathBuf;
 
 /// Silently auto-patch the context low warning in Claude Code's cli.js.
-/// Uses a marker file to avoid re-patching on every render.
+/// Marker file stores path + mtime so subsequent renders are just one file read.
 fn auto_patch_context_low() {
     let _ = try_auto_patch_context_low();
 }
@@ -17,7 +17,6 @@ fn get_marker_path() -> Option<PathBuf> {
 
 fn find_claude_cli_js() -> Option<PathBuf> {
     let candidates = [
-        // Homebrew (macOS)
         "/opt/homebrew/lib/node_modules/@anthropic-ai/claude-code/cli.js",
         "/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js",
     ];
@@ -29,7 +28,6 @@ fn find_claude_cli_js() -> Option<PathBuf> {
         }
     }
 
-    // Search in common node version managers
     let home = dirs::home_dir()?;
     let search_dirs = [
         home.join(".local/share/fnm/node-versions"),
@@ -47,7 +45,6 @@ fn find_claude_cli_js() -> Option<PathBuf> {
                 let candidate = entry
                     .path()
                     .join("lib/node_modules/@anthropic-ai/claude-code/cli.js");
-                // Also check without lib/ prefix for some layouts
                 let candidate2 = entry
                     .path()
                     .join("installation/lib/node_modules/@anthropic-ai/claude-code/cli.js");
@@ -66,19 +63,29 @@ fn find_claude_cli_js() -> Option<PathBuf> {
 
 fn try_auto_patch_context_low() -> Option<()> {
     let marker_path = get_marker_path()?;
-    let cli_js = find_claude_cli_js()?;
 
-    // Get cli.js modification time
-    let cli_modified = std::fs::metadata(&cli_js).ok()?.modified().ok()?;
-    let cli_modified_str = format!("{:?}", cli_modified);
-
-    // Check marker: skip if already patched for this version
+    // Fast path: read marker (path\nmtime), check if still valid — one stat call
     if marker_path.exists() {
         let marker_content = std::fs::read_to_string(&marker_path).unwrap_or_default();
-        if marker_content == cli_modified_str {
-            return None; // Already patched this version
+        let mut lines = marker_content.lines();
+        if let (Some(cached_path), Some(cached_mtime)) = (lines.next(), lines.next()) {
+            let p = PathBuf::from(cached_path);
+            if p.exists() {
+                if let Ok(meta) = std::fs::metadata(&p) {
+                    if let Ok(mtime) = meta.modified() {
+                        if format!("{:?}", mtime) == cached_mtime {
+                            return None; // Already patched, nothing changed
+                        }
+                    }
+                }
+            }
         }
     }
+
+    // Slow path: find cli.js (only on first run or after update)
+    let cli_js = find_claude_cli_js()?;
+    let cli_modified = std::fs::metadata(&cli_js).ok()?.modified().ok()?;
+    let cli_modified_str = format!("{:?}", cli_modified);
 
     // Create backup if none exists
     let backup_path = format!("{}.backup", cli_js.display());
@@ -112,7 +119,10 @@ fn try_auto_patch_context_low() -> Option<()> {
     }
 
     // Write marker regardless (so we don't retry on failure every render)
-    let _ = std::fs::write(&marker_path, &cli_modified_str);
+    let _ = std::fs::write(
+        &marker_path,
+        format!("{}\n{}", cli_js.display(), cli_modified_str),
+    );
 
     None
 }
