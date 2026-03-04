@@ -622,6 +622,47 @@ impl ClaudeCodePatcher {
     // Optimized batch patching - parse once, apply all
     // =========================================================================
 
+    /// Apply only the context low warning patch
+    pub fn apply_context_low_patch(&mut self) -> Vec<(&'static str, bool)> {
+        let mut results = Vec::new();
+
+        let tree = match self.parse_tree() {
+            Some(t) => t,
+            None => {
+                println!("⚠️ Failed to parse JavaScript AST");
+                return vec![("Context low warnings", false)];
+            }
+        };
+
+        let root = tree.root_node();
+
+        match self.find_context_low_condition(root) {
+            Some(loc) => {
+                let replacement = "if(true)return null;".to_string();
+                self.show_diff(
+                    "Context Low Condition",
+                    &replacement,
+                    loc.start_index,
+                    loc.end_index,
+                );
+                let new_content = format!(
+                    "{}{}{}",
+                    &self.file_content[..loc.start_index],
+                    replacement,
+                    &self.file_content[loc.end_index..]
+                );
+                self.file_content = new_content;
+                results.push(("Context low warnings", true));
+            }
+            None => {
+                println!("⚠️ Could not disable context low warnings");
+                results.push(("Context low warnings", false));
+            }
+        }
+
+        results
+    }
+
     /// Apply all patches using optimized single-parse strategy
     /// Returns results in the same order as the original implementation
     pub fn apply_all_patches(&mut self) -> Vec<(&'static str, bool)> {

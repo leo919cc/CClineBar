@@ -88,6 +88,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         return Ok(());
     }
 
+    // Handle context-only patcher
+    if let Some(claude_path) = cli.patch_context {
+        use ccometixline::utils::ClaudeCodePatcher;
+
+        println!("🔧 Claude Code Context Warning Disabler (context only)");
+        println!("Target file: {}", claude_path);
+
+        let backup_path = format!("{}.backup", claude_path);
+        if !std::path::Path::new(&backup_path).exists() {
+            std::fs::copy(&claude_path, &backup_path)?;
+            println!("📦 Created backup: {}", backup_path);
+        }
+
+        let mut patcher = ClaudeCodePatcher::new(&claude_path)?;
+
+        println!("\n🔄 Applying context low patch...");
+        let results = patcher.apply_context_low_patch();
+        patcher.save()?;
+
+        ClaudeCodePatcher::print_summary(&results);
+        println!("💡 To restore, replace cli.js with the backup file:");
+        println!("   cp {} {}", backup_path, claude_path);
+
+        return Ok(());
+    }
+
     // Load configuration
     let mut config = Config::load().unwrap_or_else(|_| Config::default());
 

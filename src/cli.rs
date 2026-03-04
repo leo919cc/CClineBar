@@ -28,9 +28,13 @@ pub struct Cli {
     #[arg(short = 'u', long = "update")]
     pub update: bool,
 
-    /// Patch Claude Code cli.js to disable context warnings
+    /// Patch Claude Code cli.js (all patches)
     #[arg(long = "patch")]
     pub patch: Option<String>,
+
+    /// Patch Claude Code cli.js (context low warning only)
+    #[arg(long = "patch-context")]
+    pub patch_context: Option<String>,
 }
 
 impl Cli {
