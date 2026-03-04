@@ -280,11 +280,13 @@ Shows actual model generation time (`total_api_duration_ms`) for the current ses
 
 ## Requirements
 
+- **Claude Code**: Required — ccline is a statusline extension for Claude Code
 - **Git**: Version 1.5+ (Git 2.22+ recommended for better branch detection)
-- **Terminal**: Must support Nerd Fonts for proper icon display
+- **Nerd Font** (recommended): Required for NerdFont and Powerline themes. The default `plain` theme uses emoji icons and works without Nerd Fonts
   - Install a [Nerd Font](https://www.nerdfonts.com/) (e.g., FiraCode Nerd Font, JetBrains Mono Nerd Font)
-  - Configure your terminal to use the Nerd Font
-- **Claude Code**: For statusline integration
+  - Set your terminal font to the installed Nerd Font
+  - Without a Nerd Font, use the `plain` style mode or the `default`/`minimal` themes which use emoji icons
+- **Rust** (build from source only): Install via [rustup](https://rustup.rs/) — not needed if installing via npm
 
 ## Development
 
