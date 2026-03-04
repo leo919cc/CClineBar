@@ -15,6 +15,12 @@ pub struct Config {
 pub struct StyleConfig {
     pub mode: StyleMode,
     pub separator: String,
+    #[serde(default = "default_true")]
+    pub show_icons: bool,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]

@@ -215,7 +215,11 @@ impl StatusLineGenerator {
     }
 
     fn render_segment(&self, config: &SegmentConfig, data: &SegmentData) -> String {
-        let icon = if let Some(dynamic_icon) = data.metadata.get("dynamic_icon") {
+        let show_icons = self.config.style.show_icons;
+
+        let icon = if !show_icons {
+            String::new()
+        } else if let Some(dynamic_icon) = data.metadata.get("dynamic_icon") {
             dynamic_icon.clone()
         } else {
             self.get_icon(config)
@@ -225,14 +229,6 @@ impl StatusLineGenerator {
         if let Some(bg_color) = &config.colors.background {
             let bg_code = self.apply_background_color(bg_color);
 
-            // Build the entire segment content first
-            let icon_colored = if let Some(icon_color) = &config.colors.icon {
-                self.apply_color(&icon, Some(icon_color))
-                    .replace("\x1b[0m", "")
-            } else {
-                icon.clone()
-            };
-
             let text_styled = self
                 .apply_style(
                     &data.primary,
@@ -241,7 +237,17 @@ impl StatusLineGenerator {
                 )
                 .replace("\x1b[0m", "");
 
-            let mut segment_content = format!(" {} {} ", icon_colored, text_styled);
+            let mut segment_content = if show_icons && !icon.is_empty() {
+                let icon_colored = if let Some(icon_color) = &config.colors.icon {
+                    self.apply_color(&icon, Some(icon_color))
+                        .replace("\x1b[0m", "")
+                } else {
+                    icon.clone()
+                };
+                format!(" {} {} ", icon_colored, text_styled)
+            } else {
+                format!(" {} ", text_styled)
+            };
 
             if !data.secondary.is_empty() {
                 let secondary_styled = self
@@ -258,14 +264,18 @@ impl StatusLineGenerator {
             format!("{}{}\x1b[49m", bg_code, segment_content)
         } else {
             // No background color, use original logic
-            let icon_colored = self.apply_color(&icon, config.colors.icon.as_ref());
             let text_styled = self.apply_style(
                 &data.primary,
                 config.colors.text.as_ref(),
                 config.styles.text_bold,
             );
 
-            let mut segment = format!("{} {}", icon_colored, text_styled);
+            let mut segment = if show_icons && !icon.is_empty() {
+                let icon_colored = self.apply_color(&icon, config.colors.icon.as_ref());
+                format!("{} {}", icon_colored, text_styled)
+            } else {
+                text_styled
+            };
 
             if !data.secondary.is_empty() {
                 segment.push_str(&format!(
