@@ -71,6 +71,7 @@ pub enum SegmentId {
     Usage,
     Cost,
     Session,
+    ModelTime,
     OutputStyle,
     Update,
 }

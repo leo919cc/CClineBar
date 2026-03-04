@@ -115,6 +115,24 @@ pub fn session_segment() -> SegmentConfig {
     }
 }
 
+pub fn model_time_segment() -> SegmentConfig {
+    SegmentConfig {
+        id: SegmentId::ModelTime,
+        enabled: false,
+        icon: IconConfig {
+            plain: "⏱️".to_string(),
+            nerd_font: "\u{f64f}".to_string(),
+        },
+        colors: ColorConfig {
+            icon: Some(AnsiColor::Color16 { c16: 5 }), // Magenta
+            text: Some(AnsiColor::Color16 { c16: 5 }),
+            background: None,
+        },
+        styles: TextStyleConfig::default(),
+        options: HashMap::new(),
+    }
+}
+
 pub fn output_style_segment() -> SegmentConfig {
     SegmentConfig {
         id: SegmentId::OutputStyle,

@@ -119,6 +119,36 @@ pub fn context_window_segment() -> SegmentConfig {
     }
 }
 
+pub fn model_time_segment() -> SegmentConfig {
+    SegmentConfig {
+        id: SegmentId::ModelTime,
+        enabled: false,
+        icon: IconConfig {
+            plain: "⏱️".to_string(),
+            nerd_font: "\u{f64f}".to_string(),
+        },
+        colors: ColorConfig {
+            icon: Some(AnsiColor::Rgb {
+                r: 255,
+                g: 255,
+                b: 255,
+            }),
+            text: Some(AnsiColor::Rgb {
+                r: 255,
+                g: 255,
+                b: 255,
+            }),
+            background: Some(AnsiColor::Rgb {
+                r: 107,
+                g: 114,
+                b: 128,
+            }),
+        },
+        styles: TextStyleConfig::default(),
+        options: HashMap::new(),
+    }
+}
+
 pub fn cost_segment() -> SegmentConfig {
     SegmentConfig {
         id: SegmentId::Cost,

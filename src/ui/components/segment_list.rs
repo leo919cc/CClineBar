@@ -55,6 +55,7 @@ impl SegmentListComponent {
                     SegmentId::Usage => "Usage",
                     SegmentId::Cost => "Cost",
                     SegmentId::Session => "Session",
+                    SegmentId::ModelTime => "Model Time",
                     SegmentId::OutputStyle => "Output Style",
                     SegmentId::Update => "Update",
                 };

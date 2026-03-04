@@ -161,6 +161,15 @@ impl PreviewComponent {
                         map
                     },
                 },
+                SegmentId::ModelTime => SegmentData {
+                    primary: "12m 34s".to_string(),
+                    secondary: "".to_string(),
+                    metadata: {
+                        let mut map = HashMap::new();
+                        map.insert("api_duration_ms".to_string(), "754000".to_string());
+                        map
+                    },
+                },
                 SegmentId::OutputStyle => SegmentData {
                     primary: "default".to_string(),
                     secondary: "".to_string(),

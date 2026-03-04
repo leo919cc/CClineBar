@@ -502,6 +502,10 @@ pub fn collect_all_segments(
                 let segment = SessionSegment::new();
                 segment.collect(input)
             }
+            crate::config::SegmentId::ModelTime => {
+                let segment = ModelTimeSegment::new();
+                segment.collect(input)
+            }
             crate::config::SegmentId::OutputStyle => {
                 let segment = OutputStyleSegment::new();
                 segment.collect(input)
