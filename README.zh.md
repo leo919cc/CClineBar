@@ -1,6 +1,6 @@
 # CClineBar
 
-> 基于 [Haleclipse/CClineBar](https://github.com/Haleclipse/CClineBar) 开发 — 感谢原作者的优秀项目。
+> 基于 [Haleclipse/CCometixLine](https://github.com/Haleclipse/CCometixLine) 开发 — 感谢原作者的优秀项目。
 
 [English](README.md) | [中文](README.zh.md)
 
@@ -13,29 +13,49 @@
 
 ![CClineBar](assets/img1.png)
 
-状态栏显示：模型 | 目录 | Git 分支状态 | 上下文窗口信息
+## Fork 新增功能
 
-## 特性
+### 费用追踪 — `$当前会话 / $当月累计`
+
+作为 Max 订阅用户，一直很好奇：如果用按量付费的 API Key，实际要花多少钱？这个模块就是为了回答这个问题 — 显示你的使用量对应的 API 等价费用，让你直观看到订阅到底帮你省了多少。
+
+- **会话费用**：读取 Claude Code 的 `total_cost_usd` 字段，基于实际模型和 API 定价计算
+- **月度累计**：记录在 `~/.claude/ccline/monthly_cost.json`，跨会话累计，每月自动重置
+- **始终记录**：无论费用模块是否显示，每次渲染都会记录费用数据
+- **不重复计算**：每个会话通过 transcript 路径标识，重复渲染只覆盖不累加
+
+### 模型工作时长
+
+如果把 LLM 看作你的编程搭档，知道它实际工作了多久是件很有趣的事。这个模块显示当前会话的模型生成时间（`total_api_duration_ms`）— 纯推理时间，不是挂钟时间。
+
+### 其他新增
+
+- **`show_icons` 开关** — 隐藏所有图标以节省终端空间
+- **自动补丁上下文警告** — 首次渲染时自动移除 "Context low" 提示，无需手动 `--patch`
+- **准确的上下文百分比** — 显示剩余比例（非已用），与 Claude Code 自身公式一致
+- **费用始终追踪** — 即使隐藏费用模块，月度费用仍会累计
+
+## 功能特性
 
 ### 核心功能
 - **Git 集成** 显示分支、状态和跟踪信息
 - **模型显示** 简化的 Claude 模型名称
-- **使用量跟踪** 基于转录文件分析  
+- **使用量跟踪** 基于 transcript 文件分析
 - **目录显示** 显示当前工作空间
 - **简洁设计** 使用 Nerd Font 图标
 
 ### 交互式 TUI 功能
-- **交互式主菜单** 无输入时直接执行显示菜单
+- **交互式主菜单** 无输入时直接显示菜单
 - **TUI 配置界面** 实时预览配置效果
 - **主题系统** 多种内置预设主题
 - **段落自定义** 精细化控制各段落
 - **配置管理** 初始化、检查、编辑配置
 
 ### Claude Code 增强
-- **禁用上下文警告** 移除烦人的"Context low"消息
-- **启用详细模式** 增强输出详细信息
-- **稳定补丁器** 适应 Claude Code 版本更新
-- **自动备份** 安全修改，支持轻松恢复
+- **禁用上下文警告** — 首次渲染时自动移除 "Context low" 消息
+- **启用详细模式** — 增强输出详细信息
+- **稳定补丁器** — 适应 Claude Code 版本更新
+- **自动备份** — 安全修改，支持轻松恢复
 
 ## 安装
 
@@ -44,25 +64,13 @@
 通过 npm 安装（适用于所有平台）：
 
 ```bash
-# 全局安装
 npm install -g @cometix/ccline
-
-# 或使用 yarn
-yarn global add @cometix/ccline
-
-# 或使用 pnpm
-pnpm add -g @cometix/ccline
-```
-
-使用镜像源加速下载：
-```bash
-npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 ```
 
 安装后：
-- ✅ 全局命令 `ccline` 可在任何地方使用
-- ⚙️ 按照下方提示进行配置以集成到 Claude Code
-- 🎨 运行 `ccline -c` 打开配置面板进行主题选择
+- 全局命令 `ccline` 可在任何地方使用
+- 按照下方提示进行配置以集成到 Claude Code
+- 运行 `ccline -c` 打开配置面板进行主题选择
 
 ### Claude Code 配置
 
@@ -72,7 +80,7 @@ npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 ```json
 {
   "statusLine": {
-    "type": "command", 
+    "type": "command",
     "command": "~/.claude/ccline/ccline",
     "padding": 0
   }
@@ -83,24 +91,12 @@ npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 ```json
 {
   "statusLine": {
-    "type": "command", 
+    "type": "command",
     "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
     "padding": 0
   }
 }
 ```
-
-**后备方案 (npm 安装):**
-```json
-{
-  "statusLine": {
-    "type": "command", 
-    "command": "ccline",
-    "padding": 0
-  }
-}
-```
-*如果 npm 全局安装已在 PATH 中可用，则使用此配置*
 
 ### 更新
 
@@ -111,56 +107,48 @@ npm update -g @cometix/ccline
 <details>
 <summary>手动安装（点击展开）</summary>
 
-或者从 [Releases](https://github.com/Haleclipse/CClineBar/releases) 手动下载：
+从 [Releases](https://github.com/Haleclipse/CCometixLine/releases) 下载：
 
-#### Linux
-
-#### 选项 1: 动态链接版本（推荐）
+#### Linux（动态链接 — 推荐）
 ```bash
 mkdir -p ~/.claude/ccline
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-linux-x64.tar.gz
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-linux-x64.tar.gz
 tar -xzf ccline-linux-x64.tar.gz
 cp ccline ~/.claude/ccline/
 chmod +x ~/.claude/ccline/ccline
 ```
-*系统要求: Ubuntu 22.04+, CentOS 9+, Debian 11+, RHEL 9+ (glibc 2.35+)*
 
-#### 选项 2: 静态链接版本（通用兼容）
+#### Linux（静态链接 — 通用兼容）
 ```bash
 mkdir -p ~/.claude/ccline
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-linux-x64-static.tar.gz
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-linux-x64-static.tar.gz
 tar -xzf ccline-linux-x64-static.tar.gz
-cp ccline ~/.claude/ccline/
-chmod +x ~/.claude/ccline/ccline
-```
-*适用于任何 Linux 发行版（静态链接，无依赖）*
-
-#### macOS (Intel)
-
-```bash  
-mkdir -p ~/.claude/ccline
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-macos-x64.tar.gz
-tar -xzf ccline-macos-x64.tar.gz
 cp ccline ~/.claude/ccline/
 chmod +x ~/.claude/ccline/ccline
 ```
 
 #### macOS (Apple Silicon)
-
 ```bash
-mkdir -p ~/.claude/ccline  
-wget https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-macos-arm64.tar.gz
+mkdir -p ~/.claude/ccline
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-macos-arm64.tar.gz
 tar -xzf ccline-macos-arm64.tar.gz
 cp ccline ~/.claude/ccline/
 chmod +x ~/.claude/ccline/ccline
 ```
 
-#### Windows
+#### macOS (Intel)
+```bash
+mkdir -p ~/.claude/ccline
+wget https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-macos-x64.tar.gz
+tar -xzf ccline-macos-x64.tar.gz
+cp ccline ~/.claude/ccline/
+chmod +x ~/.claude/ccline/ccline
+```
 
+#### Windows
 ```powershell
-# 创建目录并下载
 New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\ccline"
-Invoke-WebRequest -Uri "https://github.com/Haleclipse/CClineBar/releases/latest/download/ccline-windows-x64.zip" -OutFile "ccline-windows-x64.zip"
+Invoke-WebRequest -Uri "https://github.com/Haleclipse/CCometixLine/releases/latest/download/ccline-windows-x64.zip" -OutFile "ccline-windows-x64.zip"
 Expand-Archive -Path "ccline-windows-x64.zip" -DestinationPath "."
 Move-Item "ccline.exe" "$env:USERPROFILE\.claude\ccline\"
 ```
@@ -170,10 +158,13 @@ Move-Item "ccline.exe" "$env:USERPROFILE\.claude\ccline\"
 ### 从源码构建
 
 ```bash
-git clone https://github.com/Haleclipse/CClineBar.git
+git clone https://github.com/leo919cc/CClineBar.git
 cd CClineBar
 cargo build --release
+
+mkdir -p ~/.claude/ccline
 cp target/release/ccometixline ~/.claude/ccline/ccline
+chmod +x ~/.claude/ccline/ccline
 ```
 
 ## 使用
@@ -181,62 +172,23 @@ cp target/release/ccometixline ~/.claude/ccline/ccline
 ### 配置管理
 
 ```bash
-# 初始化配置文件
-ccline --init
-
-# 检查配置有效性  
-ccline --check
-
-# 打印当前配置
-ccline --print
-
-# 进入 TUI 配置模式
-ccline --config
+ccline --init      # 初始化配置文件
+ccline --check     # 检查配置有效性
+ccline --print     # 打印当前配置
+ccline --config    # 进入 TUI 配置模式
 ```
 
 ### 主题覆盖
 
 ```bash
-# 临时使用指定主题（覆盖配置文件设置）
 ccline --theme cometix
 ccline --theme minimal
 ccline --theme gruvbox
 ccline --theme nord
 ccline --theme powerline-dark
-
-# 或使用 ~/.claude/ccline/themes/ 目录下的自定义主题
-ccline --theme my-custom-theme
 ```
 
-### Claude Code 增强
-
-```bash
-# 禁用上下文警告并启用详细模式
-ccline --patch /path/to/claude-code/cli.js
-
-# 常见安装路径示例
-ccline --patch ~/.local/share/fnm/node-versions/v24.4.1/installation/lib/node_modules/@anthropic-ai/claude-code/cli.js
-```
-
-## 默认段落
-
-显示：`目录 | Git 分支状态 | 模型 | 上下文窗口`
-
-### Git 状态指示器
-
-- 带 Nerd Font 图标的分支名
-- 状态：`✓` 清洁，`●` 有更改，`⚠` 冲突
-- 远程跟踪：`↑n` 领先，`↓n` 落后
-
-### 模型显示
-
-显示简化的 Claude 模型名称：
-- `claude-3-5-sonnet` → `Sonnet 3.5`
-- `claude-4-sonnet` → `Sonnet 4`
-
-### 上下文窗口显示
-
-基于转录文件分析的令牌使用百分比，包含上下文限制跟踪。
+也可以使用 `~/.claude/ccline/themes/` 目录下的自定义主题。
 
 ## 配置
 
@@ -247,55 +199,41 @@ CClineBar 支持通过 TOML 文件和交互式 TUI 进行完整配置：
 - **主题文件**: `~/.claude/ccline/themes/*.toml` 自定义主题文件
 - **自动初始化**: `ccline --init` 创建默认配置
 
+### 样式选项
+
+```toml
+[style]
+mode = "nerd_font"    # "plain", "nerd_font", 或 "powerline"
+separator = " | "
+show_icons = true     # 设为 false 隐藏所有图标以节省空间
+```
+
 ### 可用段落
 
-所有段落都支持配置：
-- 启用/禁用切换
-- 自定义分隔符和图标
-- 颜色自定义
-- 格式选项
+所有段落都支持启用/禁用、自定义分隔符、图标、颜色和格式选项。
 
-支持的段落：目录、Git、模型、使用量、时间、成本、输出样式
-
+支持的段落：目录、Git、模型、上下文窗口、模型时间、使用量、费用、会话、输出样式
 
 ## 系统要求
 
-- **Git**: 版本 1.5+ (推荐 Git 2.22+ 以获得更好的分支检测)
-- **终端**: 必须支持 Nerd Font 图标正常显示
-  - 安装 [Nerd Font](https://www.nerdfonts.com/) 字体
-  - 中文用户推荐: [Maple Font](https://github.com/subframe7536/maple-font) (支持中文的 Nerd Font)
-  - 在终端中配置使用该字体
-- **Claude Code**: 用于状态栏集成
+- **Claude Code**：必需 — CClineBar 是 Claude Code 的状态栏扩展
+- **Git**：版本 1.5+（推荐 Git 2.22+）
+- **Nerd Font**（推荐）：NerdFont 和 Powerline 主题需要。`plain` 主题使用 emoji 图标，无需 Nerd Font
+- **Rust**（仅从源码构建时需要）：通过 [rustup](https://rustup.rs/) 安装
 
 ## 开发
 
 ```bash
-# 构建开发版本
-cargo build
-
-# 运行测试
-cargo test
-
-# 构建优化版本
-cargo build --release
+cargo build            # 开发版本
+cargo test             # 运行测试
+cargo build --release  # 优化发布版本
 ```
 
-## 路线图
+## 相关项目
 
-- [x] TOML 配置文件支持
-- [x] TUI 配置界面
-- [x] 自定义主题
-- [x] 交互式主菜单
-- [x] Claude Code 增强工具
-
-## 贡献
-
-欢迎贡献！请随时提交 issue 或 pull request。
+- [CCometixLine](https://github.com/Haleclipse/CCometixLine) — 本 fork 的上游原始项目
+- [tweakcc](https://github.com/Piebald-AI/tweakcc) — 自定义 Claude Code 主题、思考动词等的命令行工具
 
 ## 许可证
 
-本项目采用 [MIT 许可证](LICENSE)。
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=Haleclipse/CClineBar&type=Date)](https://star-history.com/#Haleclipse/CClineBar&Date)
+[MIT 许可证](LICENSE)
