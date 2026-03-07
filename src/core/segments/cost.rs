@@ -24,6 +24,10 @@ fn get_cost_file_path() -> PathBuf {
     get_cost_dir().join("monthly_cost.json")
 }
 
+fn get_backup_file_path() -> PathBuf {
+    get_cost_dir().join("monthly_cost.bak.json")
+}
+
 fn get_lock_file_path() -> PathBuf {
     get_cost_dir().join("monthly_cost.lock")
 }
@@ -88,15 +92,19 @@ pub fn track_monthly_cost(transcript_path: &str, session_cost: f64) -> Option<f6
     // Month computed inside lock to prevent midnight boundary races
     let month = current_month();
 
+    let backup_path = get_backup_file_path();
+
     let mut data = match load_monthly_data_from_path(&cost_path) {
         Some(d) => d,
         None => {
-            // File doesn't exist yet — start fresh
-            // (Parse errors also land here; acceptable since corrupt data
-            // would be overwritten anyway and the lock prevents concurrent damage)
-            MonthlyCostData {
-                month: month.clone(),
-                sessions: HashMap::new(),
+            // Main file missing or unreadable — try the backup
+            match load_monthly_data_from_path(&backup_path) {
+                Some(d) => d,
+                // No backup either — start fresh
+                None => MonthlyCostData {
+                    month: month.clone(),
+                    sessions: HashMap::new(),
+                },
             }
         }
     };
@@ -119,6 +127,9 @@ pub fn track_monthly_cost(transcript_path: &str, session_cost: f64) -> Option<f6
     // Atomic write: temp file + fsync + rename + fsync dir
     // Fail the update if persistence fails — lock released via drop
     atomic_save(&cost_path, &data).ok()?;
+
+    // Save backup so we can recover if the main file gets corrupted
+    let _ = atomic_save(&backup_path, &data);
 
     Some(total)
 }
